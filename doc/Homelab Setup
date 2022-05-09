@@ -1,0 +1,100 @@
+Home Lab Setup:
+
+- Install Debian Bullseye
+- Update /etc/hosts with the proper 'static' IP address
+- Verify with:
+hostname --ip-address
+
+- Add Proxmox sources
+echo "deb [arch=amd64] http://download.proxmox.com/debian/pve bullseye pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list
+
+If installed from CD without mirros, make sure /etc/apt/sources.list looks like this:
+
+deb http://deb.debian.org/debian bullseye main contrib non-free
+deb-src http://deb.debian.org/debian bullseye main contrib non-free
+
+deb http://deb.debian.org/debian bullseye-updates main contrib non-free
+deb-src http://deb.debian.org/debian bullseye-updates main contrib non-free
+
+deb http://deb.debian.org/debian bullseye-backports main contrib non-free
+deb-src http://deb.debian.org/debian bullseye-backports main contrib non-free
+
+deb http://security.debian.org/debian-security/ bullseye-security main contrib non-free
+deb-src http://security.debian.org/debian-security/ bullseye-security main contrib non-free
+
+- Add Proxmox gpg sig
+wget https://enterprise.proxmox.com/debian/proxmox-release-bullseye.gpg -O /etc/apt/trusted.gpg.d/proxmox-release-bullseye.gpg 
+
+- Verify gpg sig
+sha512sum /etc/apt/trusted.gpg.d/proxmox-release-bullseye.gpg 
+7fb03ec8a1675723d2853b84aa4fdb49a46a3bb72b9951361488bfd19b29aab0a789a4f8c7406e71a69aabbc727c936d3549731c4659ffa1a08f44db8fdcebfa  /etc/apt/trusted.gpg.d/proxmox-release-bullseye.gpg 
+
+- Make sure everything is up-to-date
+
+apt update && apt full-upgrade
+
+- Install proxmox
+
+apt install proxmox-ve postfix open-iscsi
+
+- Modify each host to have a vbr0
+- Setup vbr0 against dhcp with proper vlan:
+
+source /etc/network/interfaces.d/*
+
+auto lo
+iface lo inet loopback
+
+iface eno1 inet manual
+
+auto vmbr0
+iface vmbr0 inet static
+        address 192.168.3.6/24
+        gateway 192.168.3.1
+        bridge-ports eno1
+        bridge-stp off
+        bridge-fd 0
+        bridge-vlan-aware yes
+        bridge-vids 3  # Note the vlan tag
+        
+- Reboot host
+- Add mountpoint for sd_card in fstab:
+
+UUID=<uuid here>    /mnt/sd_card ext4 discard,noatime,errors=remount-ro 0 1
+
+
+- Remove debian kernel to void upgrade conflicts
+
+apt remove linux-image-amd64 'linux-image-5.10*'
+
+- Add nomodset for graphics issues when debugging
+
+- Update grub
+
+update-grub
+
+- Setup Cluster on minion1
+
+pvecm create tycho-station
+
+pvecm status
+
+- Join all other hosts to cluster (only one node at a time!!):
+
+pvecm add <ip of master node>
+
+- Setup directory storage to sd_card at the cluster level (so all hosts get this by default)
+- Setup Ceph against USB drives
+
+
+Notes: 
+
+To teardown cluster, you will need to do this on each of the nodes:
+
+systemctl stop pve-cluster
+systemctl stop corosync
+pmxcfs -l
+rm /etc/pve/corosync.conf
+rm -rf /etc/corosync/*
+killall pmxcfs
+systemctl start pve-cluster
