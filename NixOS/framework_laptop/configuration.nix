@@ -171,7 +171,6 @@
 
   # Setup scanner
   hardware.sane.enable = true;
-  hardware.sane.dsseries.enable = true;
   hardware.sane.brscan5.enable = true;  
 
   # Configure Pipewire Audio
@@ -261,6 +260,7 @@
     # Applications #
     #--------------#
 
+    brscan5
     brlaser
     brgenml1lpr
     brgenml1cupswrapper
@@ -303,6 +303,7 @@
     vim
     xorg.libX11
     xorg.libX11.dev
+    xsane
 
     #-----------------#
     # Unfree software #
