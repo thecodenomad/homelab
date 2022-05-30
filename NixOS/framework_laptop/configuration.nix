@@ -33,7 +33,11 @@
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.consoleMode = "auto";
   boot.loader.efi.canTouchEfiVariables = true;
+
+  # Note: Unfree software needs to be set for this
+  boot.loader.systemd-boot.memtest86.enable = true;
 
   # For Full Disk Encryption
   boot.initrd.luks.devices = {
